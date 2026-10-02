@@ -1,0 +1,47 @@
+# Verifica se o Hyper-V está disponível
+$hyperv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All
+
+if ($hyperv.State -ne "Enabled") {
+    Write-Host "Ativando o Hyper-V..."
+    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -All
+    Write-Host "Reinicie o Windows e execute este script novamente."
+    exit
+}
+
+# Configurações da máquina virtual
+$VMName = "MeuPCVirtual"
+$VMPath = "C:\VMs\$VMName"
+$VHDPath = "$VMPath\$VMName.vhdx"
+
+$Memory = 4GB
+$DiskSize = 60GB
+
+# Cria a pasta
+New-Item -ItemType Directory -Path $VMPath -Force | Out-Null
+
+# Cria o disco virtual
+if (!(Test-Path $VHDPath)) {
+    New-VHD `
+        -Path $VHDPath `
+        -SizeBytes $DiskSize `
+        -Dynamic
+}
+
+# Cria a máquina virtual
+if (!(Get-VM -Name $VMName -ErrorAction SilentlyContinue)) {
+
+    New-VM `
+        -Name $VMName `
+        -MemoryStartupBytes $Memory `
+        -Generation 2 `
+        -VHDPath $VHDPath `
+        -Path $VMPath
+
+    Write-Host "Máquina virtual criada!"
+}
+else {
+    Write-Host "A máquina virtual já existe."
+}
+
+# Mostra as informações
+Get-VM -Name $VMName
